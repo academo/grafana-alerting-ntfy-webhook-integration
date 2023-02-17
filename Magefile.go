@@ -51,6 +51,12 @@ func RunLocal() error {
 func Deploy() error {
 	mg.Deps(Build)
 	var err error
+
+	// fail if git is not clean
+	if err = sh.Run("git", "diff-index", "--quiet", "HEAD", "--"); err != nil {
+		return fmt.Errorf("git is not clean: %w", err)
+	}
+
 	version, err := getNextVersion()
 	if err != nil {
 		return err
@@ -88,7 +94,6 @@ func Deploy() error {
 		return err
 	}
 	return nil
-
 }
 
 func getNextVersion() (string, error) {
