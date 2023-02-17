@@ -15,7 +15,7 @@ You could use grafana alerting webhooks directly with ntfy but he notification w
 
 ## How to use
 
-Download the release binary and run it as a server
+[Download](https://github.com/academo/grafana-alerting-ntfy-webhook-integration/releases/) the release binary and run it as a server
 
 ```bash
 grafana-ntfy -ntfy-url "https://ntfy.sh/mytopic"
