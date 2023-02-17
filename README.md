@@ -9,7 +9,8 @@ Once https://github.com/grafana/grafana/issues/6956 is implemented this tool wil
 
 ## Why?
 
-You could use grafana alerting webhooks directly with ntfy but he notification will contain the json payload grafana sends which is not too useful in a notification.
+You could use grafana alerting webhooks directly with ntfy but the notification will contain the json payload grafana sends which is not too useful in a notification.
+
 
 ## How to use
 
@@ -56,6 +57,12 @@ Usage of grafana-ntfy:
 # No https?
 
 This webhook is suppose to run next to your grafana instance and only accepts local request. You should not expose this server to the internet.
+
+# Other projects
+
+https://github.com/kittyandrew/grafana-to-ntfy
+
+Much similar to this project but written in Rust but not compatible with the latest Grafana. I would have pushed updates to said project if I were proficient enough in Rust.
 
 # License
 
