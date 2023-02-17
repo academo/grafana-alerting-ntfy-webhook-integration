@@ -62,7 +62,7 @@ This webhook is suppose to run next to your grafana instance and only accepts lo
 
 https://github.com/kittyandrew/grafana-to-ntfy
 
-Much similar to this project but written in Rust but not compatible with the latest Grafana. I would have pushed updates to said project if I were proficient enough in Rust.
+Much similar to this project but written in Rust and not compatible with the latest Grafana. I would have pushed updates to said project if I were proficient enough in Rust.
 
 # License
 
