@@ -15,6 +15,8 @@ You could use grafana alerting webhooks directly with ntfy but he notification w
 
 ## How to use
 
+### Binary
+
 [Download](https://github.com/academo/grafana-alerting-ntfy-webhook-integration/releases/) the release binary and run it as a server
 
 ```bash
@@ -23,6 +25,21 @@ grafana-ntfy -ntfy-url "https://ntfy.sh/mytopic"
 ```
 
 This will create an http (no https) server in port 8080 that will accept POST request, re-format them and send them to the ntfy url. You can use custom ntfy servers if you want.
+
+### Docker
+
+A docker image is provided for convenience. You can use a docker-compose file like this
+
+```yaml
+# Example of a docker-compose service
+version: "3.7"
+services:
+  grafana-ntfy:
+    image: academo/grafana-ntfy:latest
+    hostname: grafana-ntfy
+    command:
+      - "-ntfy-url=https://ntfy.sh/mytopic"
+```
 
 ## Options
 
@@ -37,6 +54,10 @@ Usage of grafana-ntfy:
   -port int
         The port to listen on (default 8080)
 ```
+
+# No https?
+
+This webhook is suppose to run next to your grafana instance and only accepts local request. You should not expose this server to the internet.
 
 # License
 

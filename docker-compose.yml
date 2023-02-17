@@ -1,0 +1,8 @@
+# Example of a docker-compose service
+version: "3.7"
+services:
+  grafana-ntfy:
+    image: academo/grafana-ntfy:latest
+    hostname: grafana-ntfy
+    command:
+      - "-ntfy-url=https://ntfy.sh/mytopic"

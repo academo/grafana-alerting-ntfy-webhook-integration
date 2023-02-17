@@ -48,7 +48,7 @@ func RunLocal() error {
 	return sh.RunWith(env, filepath.Join(distDir, "grafana-ntfy"), "-ntfy-url", "https://ntfy.sh/mytopic")
 }
 
-func GithubDeploy() error {
+func Deploy() error {
 	mg.Deps(Build)
 	var err error
 	version, err := getNextVersion()
@@ -69,7 +69,24 @@ func GithubDeploy() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Release created")
+	// build docker image
+	err = sh.Run("docker", "build", "-t", "academo/grafana-ntfy:"+version, ".")
+	if err != nil {
+		return err
+	}
+	err = sh.Run("docker", "tag", "academo/grafana-ntfy:"+version, "academo/grafana-ntfy:latest")
+	if err != nil {
+		return err
+	}
+	// push docker image
+	err = sh.Run("docker", "push", "academo/grafana-ntfy:"+version)
+	if err != nil {
+		return err
+	}
+	err = sh.Run("docker", "push", "academo/grafana-ntfy:latest")
+	if err != nil {
+		return err
+	}
 	return nil
 
 }
