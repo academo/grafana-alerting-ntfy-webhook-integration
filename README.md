@@ -40,6 +40,37 @@ services:
       - "-ntfy-url=https://ntfy.sh/mytopic"
 ```
 
+#### Example of a more complete docker-compose approach
+
+```yaml
+# Example of a docker-compose service
+version: "3.7"
+
+# Creates an inner network between containers
+networks
+  - internal
+services:
+  grafana:
+    image: grafana/grafana
+    depends_on:
+      - grafana-ntfy
+    ports:
+      - 3000:3000
+    networks:
+      - internal
+  grafana-ntfy:
+    image: academo/grafana-ntfy:latest
+    hostname: grafana-ntfy
+    expose:
+      - 8080 #only accesible to other containers
+    networks:
+      - internal
+    command:
+      - "-ntfy-url=https://ntfy.sh/mytopic"
+```
+
+Then in your grafana alerting webhook contact point you would configure the url as `http://grafana-ntfy:8080` (notice is the hostname value)
+
 ## Options
 
 See grafana-ntfy -h for all options.
