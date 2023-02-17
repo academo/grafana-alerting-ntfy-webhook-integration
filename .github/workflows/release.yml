@@ -15,5 +15,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: linux
           goarch: amd64
-          goversion: 1.20
+          goversion: 1.20.0
           binary_name: grafana-ntfy
