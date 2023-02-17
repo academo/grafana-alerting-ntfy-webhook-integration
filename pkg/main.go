@@ -74,7 +74,7 @@ func server() error {
 	fmt.Println("Forwarding Grafana notifications to ntfy...", *ntfyUrl)
 	http.HandleFunc("/", handleRequest)
 	fmt.Println("Listening on port 8080...")
-	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", *port), nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {
 		return err
 	}
