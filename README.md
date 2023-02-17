@@ -1,5 +1,3 @@
-# grafana-alerting-ntfy-webhook-integration
-
 # Grafana Ntify Webhook integration
 
 Integration between https://ntfy.sh/ and grafana alerting.
