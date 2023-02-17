@@ -47,7 +47,7 @@ services:
 version: "3.7"
 
 # Creates an inner network between containers
-networks
+networks:
   - internal
 services:
   grafana:
