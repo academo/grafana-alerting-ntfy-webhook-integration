@@ -11,7 +11,6 @@ Once https://github.com/grafana/grafana/issues/6956 is implemented this tool wil
 
 You could use grafana alerting webhooks directly with ntfy but the notification will contain the json payload grafana sends which is not too useful in a notification.
 
-
 ## How to use
 
 ### Binary
@@ -48,7 +47,8 @@ version: "3.7"
 
 # Creates an inner network between containers
 networks:
-  - internal
+  internal:
+
 services:
   grafana:
     image: grafana/grafana
