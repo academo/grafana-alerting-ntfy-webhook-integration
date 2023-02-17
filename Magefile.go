@@ -4,8 +4,11 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/Masterminds/semver/v3"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 )
@@ -43,4 +46,66 @@ func RunLocal() error {
 		"DEBUG": "1",
 	}
 	return sh.RunWith(env, filepath.Join(distDir, "grafana-ntfy"), "-ntfy-url", "https://ntfy.sh/mytopic")
+}
+
+func GithubDeploy() error {
+	mg.Deps(Build)
+	var err error
+	version, err := getNextVersion()
+	if err != nil {
+		return err
+	}
+	// create the tag
+	if err = sh.Run("git", "tag", "-a", version, "-m", "Release "+version); err != nil {
+		return err
+	}
+	// push the tag
+	if err = sh.Run("git", "push", "origin", version); err != nil {
+		return err
+	}
+	fmt.Println("Tag pushed to origin")
+	// create the release
+	err = sh.Run("gh", "release", "create", version, "--latest", "-t", "Release "+version, "--verify-tag", "--generate-notes")
+	if err != nil {
+		return err
+	}
+	fmt.Println("Release created")
+	return nil
+
+}
+
+func getNextVersion() (string, error) {
+	//ask if patch, minor or major default to minor
+	releaseTypes := []string{"patch", "minor", "major"}
+	typeRelease := &survey.Select{
+		Message: "What kind of release is this?",
+		Options: releaseTypes,
+		Default: releaseTypes[1],
+	}
+	var releaseType string
+	err := survey.AskOne(typeRelease, &releaseType)
+	if err != nil {
+		return "", err
+	}
+
+	// get the current version
+	version, err := sh.Output("git", "describe", "--tags", "--abbrev=0")
+	if err != nil {
+		return "", fmt.Errorf("failed to get current version: %w", err)
+	}
+	// create the new version
+	currentVersion, err := semver.NewVersion(version)
+	var nextVersion semver.Version
+	if err != nil {
+		return "", fmt.Errorf("failed to parse current version: %w", err)
+	}
+	switch releaseType {
+	case "patch":
+		nextVersion = currentVersion.IncPatch()
+	case "minor":
+		nextVersion = currentVersion.IncMinor()
+	case "major":
+		nextVersion = currentVersion.IncMajor()
+	}
+	return nextVersion.String(), nil
 }
