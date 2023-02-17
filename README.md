@@ -37,3 +37,11 @@ Usage of grafana-ntfy:
   -port int
         The port to listen on (default 8080)
 ```
+
+# License
+
+Apache License 2.0
+
+# Disclaimer
+
+This project is not associated with GrafanaLabs
