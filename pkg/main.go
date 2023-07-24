@@ -19,7 +19,7 @@ var (
 	port          = flag.Int("port", 8080, "The port to listen on")
 )
 
-var urlRe = regexp.MustCompile(`(https?://.*?)/(\w+)$`)
+var urlRe = regexp.MustCompile(`(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?&=]+)$`)
 var topic string
 var serverUrl string
 
