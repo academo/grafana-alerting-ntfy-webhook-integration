@@ -17,7 +17,7 @@ jobs:
           goos: linux
           goarch: amd64
           goversion: 1.20.1
-          binary_name: grafana-ntfy-amd64
+          binary_name: grafana-ntfy
           project_path: ./pkg/
   # releases-matrix:
   #   name: Release Go Binary
