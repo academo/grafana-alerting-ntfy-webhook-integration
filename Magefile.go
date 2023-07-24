@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -23,8 +24,9 @@ func buildBinary() error {
 	env := map[string]string{
 		"CGO_ENABLED": "0",
 		"GO111MODULE": "on",
-		"GOARCH":      "amd64",
-		"GOOS":        "linux",
+		//get from env default to amd64
+		"GOARCH": getOrDefault("GOARCH", "amd64"),
+		"GOOS":   getOrDefault("GOOS", "linux"),
 	}
 
 	if err := sh.RunWith(env, "go", "build", "-o", filepath.Join(distDir, "grafana-ntfy"), "./pkg"); err != nil {
@@ -130,4 +132,12 @@ func getNextVersion() (string, error) {
 		nextVersion = currentVersion.IncMajor()
 	}
 	return nextVersion.String(), nil
+}
+
+func getOrDefault(envVar, defaultValue string) string {
+	value := os.Getenv(envVar)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
