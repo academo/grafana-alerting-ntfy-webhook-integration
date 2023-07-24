@@ -36,9 +36,10 @@ jobs:
       - uses: actions/checkout@v3
       - uses: wangyoucao577/go-release-action@v1
         with:
+          pre_command: export CGO_ENABLED=0
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           goversion: 1.20.1
           project_path: "./pkg/"
-          binary_name: "grafana-ntfy-${{ matrix.goos }}-${{ matrix.goarch }}"
+          binary_name: "grafana-ntfy"
