@@ -69,6 +69,25 @@ services:
       - "-ntfy-url=https://ntfy.sh/mytopic"
 ```
 
+### Example using Docker and a non amd64 architecture
+
+The provided docket image is amd64. Should you wish to use a different architecture, you can [download the binary](https://github.com/academo/grafana-alerting-ntfy-webhook-integration/releases) and use the following docker-compose file as example
+
+```
+version: "3"
+services:
+  grafana-ntfy:
+    image: arm64v8/alpine
+    # make sure to put the correct architecture binary
+    command: sh -c "/app/grafana-ntfy -ntfy-url 'https://ntfy.sh/mytopic'"
+    # point the volume to where your downloaded your binary
+    volumes:
+      - ./:/app
+    working_dir: /app
+    expose:
+      - 8080 #only accesible to other containers
+```
+
 Then in your grafana alerting webhook contact point you would configure the url as `http://grafana-ntfy:8080` (notice is the hostname value)
 
 ## Options
