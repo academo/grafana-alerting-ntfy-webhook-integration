@@ -73,7 +73,7 @@ services:
 
 The provided docket image is amd64. Should you wish to use a different architecture, you can [download the binary](https://github.com/academo/grafana-alerting-ntfy-webhook-integration/releases) and use the following docker-compose file as example
 
-```
+```yaml
 version: "3"
 services:
   grafana-ntfy:
