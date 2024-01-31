@@ -15,6 +15,8 @@ import (
 
 var (
 	ntfyUrl       = flag.String("ntfy-url", "", "The ntfy url including the topic. e.g.: https://ntfy.sh/mytopic")
+	username      = flag.String("username", "", "The ntfy username")
+	password      = flag.String("password", "", "The ntfy password")
 	allowInsecure = flag.Bool("allow-insecure", false, "Allow insecure connections to ntfy-url")
 	port          = flag.Int("port", 8080, "The port to listen on")
 )
@@ -159,6 +161,11 @@ func sendNotification(payload NtfyNotification) error {
 
 	// Set the content type to json
 	req.Header.Set("Content-Type", "application/json")
+
+	// Add auth if provided
+	if *username != "" && *password != "" {
+		req.SetBasicAuth(*username, *password)
+	}
 
 	// Send the request
 	defer req.Body.Close()
