@@ -24,8 +24,6 @@ func buildBinary() error {
 	env := map[string]string{
 		"CGO_ENABLED": "0",
 		"GO111MODULE": "on",
-		//get from env default to amd64
-		"GOARCH": getOrDefault("GOARCH", "amd64"),
 		"GOOS":   getOrDefault("GOOS", "linux"),
 	}
 
