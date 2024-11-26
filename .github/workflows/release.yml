@@ -2,6 +2,10 @@ on:
   release:
     types: [created]
 
+# Add this permissions block
+permissions:
+  contents: write
+
 jobs:
   releases-matrix:
     name: Release Go Binary
@@ -22,7 +26,7 @@ jobs:
       - uses: wangyoucao577/go-release-action@v1.35
         with:
           pre_command: export CGO_ENABLED=0
-          github_token: ${{ secrets.DEPLOY_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           goversion: 1.23.3
