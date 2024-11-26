@@ -84,7 +84,7 @@ func Deploy() error {
 		return err
 	}
 	err = sh.Run("docker", "buildx", "build",
-		"--platform", "linux/amd64,linux/arm64,darwin/arm64", // Build for both AMD64 and ARM64
+		"--platform", "linux/amd64,linux/arm64", // Build for both AMD64 and ARM64
 		"-t", "academo/grafana-ntfy:"+version,
 		"-t", "academo/grafana-ntfy:latest",
 		"--push", // Push all tags at once
