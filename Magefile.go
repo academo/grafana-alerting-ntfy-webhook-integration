@@ -79,7 +79,7 @@ func Deploy() error {
 	}
 	// build docker image
 	// Replace with these commands for multi-platform build:
-	err = sh.Run("docker", "buildx", "create", "--use", "--if-not-exists") // Create and use buildx builder
+	err = sh.Run("docker", "buildx", "create", "--use") // Create and use buildx builder
 	if err != nil {
 		return err
 	}
