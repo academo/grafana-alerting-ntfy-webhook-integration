@@ -1,6 +1,6 @@
 module github.com/academo/grafana-alerting-ntfy-webhook-integration
 
-go 1.20
+go 1.23.3
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
