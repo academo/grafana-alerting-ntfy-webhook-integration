@@ -90,18 +90,22 @@ services:
 
 Then in your grafana alerting webhook contact point you would configure the url as `http://grafana-ntfy:8080` (notice is the hostname value)
 
+For the authorization, use the username and password created in ntfy-sh in Grafana.
+
 ## Options
 
 See grafana-ntfy -h for all options.
 
 ```
 Usage of grafana-ntfy:
+  -addr string
+        The address to listen on (default ":8080")
   -allow-insecure
         Allow insecure connections to ntfy-url
+  -debug
+        print extra debug information
   -ntfy-url string
         The ntfy url including the topic. e.g.: https://ntfy.sh/mytopic
-  -port int
-        The port to listen on (default 8080)
 ```
 
 # No https?
