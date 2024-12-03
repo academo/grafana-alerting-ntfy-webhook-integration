@@ -62,9 +62,7 @@ func server() error {
 
 func handleRequest(response http.ResponseWriter, request *http.Request) {
 	if request.Method == "POST" {
-	    fmt.Println(request.URL.RequestURI())
 	    matches := urlRe.FindStringSubmatch(request.URL.RequestURI())
-	    fmt.Println(matches)
     	if len(matches) != 3 {
     		slog.Error("Error parsing ntfy-url")
     		return
@@ -112,7 +110,6 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 }
 
 func prepareNotification(alertPayload AlertsPayload, topic string) NtfyNotification {
-    fmt.Println(alertPayload)
 	firstAlert := alertPayload.Alerts[0]
 	actions := []NtfyAction{
 		{
