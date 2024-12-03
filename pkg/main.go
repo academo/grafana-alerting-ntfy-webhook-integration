@@ -29,19 +29,10 @@ type HttpClient interface {
 }
 
 var urlRe = regexp.MustCompile(`(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?&=]+)$`)
-var topic string
-var serverUrl string
 
 func main() {
 	flag.Parse()
 	var err error
-
-	err = validateFlags()
-	if err != nil {
-		slog.Error("validate flags error", "err", err)
-
-		os.Exit(1)
-	}
 
 	if *allowInsecure {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -114,6 +105,17 @@ func server() error {
 
 func handleRequest(response http.ResponseWriter, request *http.Request) {
 	if request.Method == "POST" {
+		fmt.Println(request.URL.RequestURI())
+		matches := urlRe.FindStringSubmatch(request.URL.RequestURI())
+		fmt.Println(matches)
+		if len(matches) != 3 {
+			slog.Error("Error parsing ntfy-url")
+			return
+		}
+
+		var serverUrl string = matches[1]
+		var topic string = matches[2]
+
 		// Read the request body
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
@@ -133,8 +135,8 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		notificationPayload := prepareNotification(payload)
-		err = sendNotification(notificationPayload, request.Header.Get("Authorization"), http.DefaultClient)
+		notificationPayload := prepareNotification(payload, topic)
+		err = sendNotification(notificationPayload, request.Header.Get("Authorization"), http.DefaultClient, serverUrl)
 		if err != nil {
 			slog.Error("Error sending notification", "err", err)
 			http.Error(response, "Error sending notification", http.StatusInternalServerError)
@@ -152,7 +154,7 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
+func prepareNotification(alertPayload AlertsPayload, topic string) NtfyNotification {
 	// edge case with a non-alert
 	if len(alertPayload.Alerts) == 0 {
 		return NtfyNotification{
@@ -178,7 +180,7 @@ func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
 		},
 	}
 
-	// Prepare the payloa
+	// Prepare the payload
 	payload := NtfyNotification{
 		Message: alertPayload.Message,
 		Title:   alertPayload.Title,
@@ -189,7 +191,7 @@ func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
 	return payload
 }
 
-func sendNotification(payload NtfyNotification, authHeader string, client HttpClient) error {
+func sendNotification(payload NtfyNotification, authHeader string, client HttpClient, serverUrl string) error {
 	// Marshal the payload
 	message, err := json.Marshal(payload)
 	if err != nil {
