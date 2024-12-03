@@ -11,30 +11,19 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strings"
 )
 
 var (
-	ntfyUrl       = flag.String("ntfy-url", "", "The ntfy url including the topic. e.g.: https://ntfy.sh/mytopic")
 	allowInsecure = flag.Bool("allow-insecure", false, "Allow insecure connections to ntfy-url")
 	listenAddr    = flag.String("addr", ":8080", "The address to listen on")
 	debug         = flag.Bool("debug", false, "print extra debug information")
 )
 
 var urlRe = regexp.MustCompile(`(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?&=]+)$`)
-var topic string
-var serverUrl string
 
 func main() {
 	flag.Parse()
 	var err error
-
-	err = validateFlags()
-	if err != nil {
-		slog.Error("validate flags error", "err", err)
-
-		os.Exit(1)
-	}
 
 	if *allowInsecure {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -46,21 +35,8 @@ func main() {
 		})))
 	}
 
-	matches := urlRe.FindStringSubmatch(*ntfyUrl)
-	if len(matches) != 3 {
-		slog.Error("Error parsing ntfy-url")
-
-		os.Exit(1)
-	}
-
-	serverUrl = matches[1]
-	topic = matches[2]
-
 	slog.Info(
 		"starting server",
-		"ntfy_url", *ntfyUrl,
-		"topic", topic,
-		"server_url", serverUrl,
 		"listen_addr", *listenAddr,
 	)
 
@@ -70,22 +46,6 @@ func main() {
 
 		os.Exit(1)
 	}
-}
-
-func validateFlags() error {
-	if *ntfyUrl == "" {
-		return fmt.Errorf("ntfy-url is required")
-	}
-
-	if !strings.HasPrefix(*ntfyUrl, "http") {
-		return fmt.Errorf("ntfy-url must start with http or https")
-	}
-
-	if !urlRe.MatchString(*ntfyUrl) {
-		return fmt.Errorf("ntfy-url must follow the format https://ntfy.sh/<topic>. (you may use a custom ntfy server)")
-	}
-
-	return nil
 }
 
 // start a web server on the configured address
@@ -102,6 +62,17 @@ func server() error {
 
 func handleRequest(response http.ResponseWriter, request *http.Request) {
 	if request.Method == "POST" {
+	    fmt.Println(request.URL.RequestURI())
+	    matches := urlRe.FindStringSubmatch(request.URL.RequestURI())
+	    fmt.Println(matches)
+    	if len(matches) != 3 {
+    		slog.Error("Error parsing ntfy-url")
+    		return
+    	}
+
+    	var serverUrl string = matches[1]
+    	var topic string = matches[2]
+
 		// Read the request body
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
@@ -121,8 +92,8 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		notificationPayload := prepareNotification(payload)
-		err = sendNotification(notificationPayload, request.Header.Get("Authorization"))
+		notificationPayload := prepareNotification(payload, topic)
+		err = sendNotification(notificationPayload, request.Header.Get("Authorization"), serverUrl)
 		if err != nil {
 			slog.Error("Error sending notification", "err", err)
 			http.Error(response, "Error sending notification", http.StatusInternalServerError)
@@ -140,7 +111,8 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
+func prepareNotification(alertPayload AlertsPayload, topic string) NtfyNotification {
+    fmt.Println(alertPayload)
 	firstAlert := alertPayload.Alerts[0]
 	actions := []NtfyAction{
 		{
@@ -157,7 +129,7 @@ func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
 		},
 	}
 
-	// Prepare the payloa
+	// Prepare the payload
 	payload := NtfyNotification{
 		Message: alertPayload.Message,
 		Title:   alertPayload.Title,
@@ -168,7 +140,7 @@ func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
 	return payload
 }
 
-func sendNotification(payload NtfyNotification, authHeader string) error {
+func sendNotification(payload NtfyNotification, authHeader string, serverUrl string) error {
 	// Marshal the payload
 	message, err := json.Marshal(payload)
 	if err != nil {
