@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -28,7 +29,8 @@ type HttpClient interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-var urlRe = regexp.MustCompile(`(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?&=]+)$`)
+var urlRe = regexp.MustCompile(`url=(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?=]+)`)
+var priorityRe = regexp.MustCompile(`priority=([0-9]+)`)
 
 func main() {
 	flag.Parse()
@@ -106,15 +108,15 @@ func server() error {
 func handleRequest(response http.ResponseWriter, request *http.Request) {
 	if request.Method == "POST" {
 		fmt.Println(request.URL.RequestURI())
-		matches := urlRe.FindStringSubmatch(request.URL.RequestURI())
-		fmt.Println(matches)
-		if len(matches) != 3 {
+		matchesUrl := urlRe.FindStringSubmatch(request.URL.RequestURI())
+		fmt.Println(matchesUrl)
+		if len(matchesUrl) != 3 {
 			slog.Error("Error parsing ntfy-url")
 			return
 		}
 
-		var serverUrl string = matches[1]
-		var topic string = matches[2]
+		var serverUrl string = matchesUrl[1]
+		var topic string = matchesUrl[2]
 
 		// Read the request body
 		body, err := io.ReadAll(request.Body)
@@ -135,7 +137,18 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		notificationPayload := prepareNotification(payload, topic)
+		// Parse priority. Default priority = 3, priority = [1-5]
+		matchesPriority := priorityRe.FindStringSubmatch(request.URL.RequestURI())
+		var priority int = 3
+		var priorityUrl int
+		if len(matchesPriority) == 2 {
+			priorityUrl, err = strconv.Atoi(matchesPriority[1])
+			if priorityUrl > 0 && priorityUrl < 6 {
+				priority = priorityUrl
+			}
+		}
+
+		notificationPayload := prepareNotification(payload, topic, priority)
 		err = sendNotification(notificationPayload, request.Header.Get("Authorization"), http.DefaultClient, serverUrl)
 		if err != nil {
 			slog.Error("Error sending notification", "err", err)
@@ -154,7 +167,7 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func prepareNotification(alertPayload AlertsPayload, topic string) NtfyNotification {
+func prepareNotification(alertPayload AlertsPayload, topic string, priority int) NtfyNotification {
 	// edge case with a non-alert
 	if len(alertPayload.Alerts) == 0 {
 		return NtfyNotification{
@@ -182,10 +195,11 @@ func prepareNotification(alertPayload AlertsPayload, topic string) NtfyNotificat
 
 	// Prepare the payload
 	payload := NtfyNotification{
-		Message: alertPayload.Message,
-		Title:   alertPayload.Title,
-		Topic:   topic,
-		Actions: actions,
+		Message:  alertPayload.Message,
+		Title:    alertPayload.Title,
+		Topic:    topic,
+		Actions:  actions,
+		Priority: priority,
 	}
 
 	return payload
