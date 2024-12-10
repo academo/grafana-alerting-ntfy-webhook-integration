@@ -66,13 +66,13 @@ func server() error {
 func handleRequest(response http.ResponseWriter, request *http.Request) {
 	if request.Method == "POST" {
 		matchesUrl := urlRe.FindStringSubmatch(request.URL.RequestURI())
-    	if len(matchesUrl) != 3 {
-    		slog.Error("Error parsing ntfy-url")
-    		return
-    	}
+    if len(matchesUrl) != 3 {
+    	slog.Error("Error parsing ntfy-url")
+    	return
+    }
 
-    	var serverUrl string = matchesUrl[1]
-    	var topic string = matchesUrl[2]
+    var serverUrl string = matchesUrl[1]
+    var topic string = matchesUrl[2]
 
 		// Read the request body
 		body, err := io.ReadAll(request.Body)
@@ -94,15 +94,15 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 		}
 
 		// Parse priority. Default priority = 3, priority = [1-5]
-        matchesPriority := priorityRe.FindStringSubmatch(request.URL.RequestURI())
-        var priority int = 3
-        var priorityUrl int
-        if len(matchesPriority) == 2 {
-            priorityUrl, err = strconv.Atoi(matchesPriority[1])
-            if (priorityUrl > 0 && priorityUrl < 6) {
-                priority = priorityUrl
-            }
+    matchesPriority := priorityRe.FindStringSubmatch(request.URL.RequestURI())
+    var priority int = 3
+    var priorityUrl int
+    if len(matchesPriority) == 2 {
+        priorityUrl, err = strconv.Atoi(matchesPriority[1])
+        if (priorityUrl > 0 && priorityUrl < 6) {
+            priority = priorityUrl
         }
+    }
 
 		notificationPayload := prepareNotification(payload, topic, priority)
 		err = sendNotification(notificationPayload, request.Header.Get("Authorization"), serverUrl)
@@ -169,7 +169,7 @@ func sendNotification(payload NtfyNotification, authHeader string, serverUrl str
 
 	// Set the content type to json
 	req.Header.Set("Content-Type", "application/json")
-
+  
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
 	}

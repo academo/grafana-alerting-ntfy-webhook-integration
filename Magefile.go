@@ -24,8 +24,6 @@ func buildBinary() error {
 	env := map[string]string{
 		"CGO_ENABLED": "0",
 		"GO111MODULE": "on",
-		//get from env default to amd64
-		"GOARCH": getOrDefault("GOARCH", "amd64"),
 		"GOOS":   getOrDefault("GOOS", "linux"),
 	}
 
@@ -78,20 +76,17 @@ func Deploy() error {
 		return err
 	}
 	// build docker image
-	err = sh.Run("docker", "build", "-t", "academo/grafana-ntfy:"+version, ".")
+	// Replace with these commands for multi-platform build:
+	err = sh.Run("docker", "buildx", "create", "--use") // Create and use buildx builder
 	if err != nil {
 		return err
 	}
-	err = sh.Run("docker", "tag", "academo/grafana-ntfy:"+version, "academo/grafana-ntfy:latest")
-	if err != nil {
-		return err
-	}
-	// push docker image
-	err = sh.Run("docker", "push", "academo/grafana-ntfy:"+version)
-	if err != nil {
-		return err
-	}
-	err = sh.Run("docker", "push", "academo/grafana-ntfy:latest")
+	err = sh.Run("docker", "buildx", "build",
+		"--platform", "linux/amd64,linux/arm64", // Build for both AMD64 and ARM64
+		"-t", "academo/grafana-ntfy:"+version,
+		"-t", "academo/grafana-ntfy:latest",
+		"--push", // Push all tags at once
+		".")
 	if err != nil {
 		return err
 	}
