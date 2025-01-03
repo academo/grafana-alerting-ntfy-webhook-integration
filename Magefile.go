@@ -86,6 +86,7 @@ func Deploy() error {
 		return err
 	}
 	err = sh.Run("docker", "buildx", "build",
+		"--network=host",                        // docker dns keep messing things up
 		"--platform", "linux/amd64,linux/arm64", // Build for both AMD64 and ARM64
 		"-t", "academo/grafana-ntfy:"+version,
 		"-t", "academo/grafana-ntfy:latest",
