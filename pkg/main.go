@@ -19,7 +19,7 @@ var (
 	username      = flag.String("username", "", "The ntfy username")
 	password      = flag.String("password", "", "The ntfy password")
 	allowInsecure = flag.Bool("allow-insecure", false, "Allow insecure connections to ntfy-url")
-	port          = flag.Int("port", 8080, "The port to listen on")
+	port          = flag.Int("port", 8080, "DEPRECATED. Use listenAddr. The port to listen on")
 	listenAddr    = flag.String("addr", ":8080", "The address to listen on")
 	debug         = flag.Bool("debug", false, "print extra debug information")
 )
@@ -59,6 +59,12 @@ func main() {
 	serverUrl = matches[1]
 	topic = matches[2]
 
+	// fallback for existing port option
+	if *port != 8080 && *listenAddr == ":8080" {
+		slog.Warn("Using deprecated -port flag. Please use -addr instead")
+		*listenAddr = fmt.Sprintf(":%d", *port)
+	}
+
 	slog.Info(
 		"starting server",
 		"ntfy_url", *ntfyUrl,
@@ -69,8 +75,7 @@ func main() {
 
 	err = server()
 	if err != nil {
-		slog.Error("server startup error", err)
-
+		slog.Error("server startup error", "error", err)
 		os.Exit(1)
 	}
 }
