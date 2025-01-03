@@ -24,6 +24,10 @@ var (
 	debug         = flag.Bool("debug", false, "print extra debug information")
 )
 
+type HttpClient interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
 var urlRe = regexp.MustCompile(`(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?&=]+)$`)
 var topic string
 var serverUrl string
@@ -130,7 +134,7 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 		}
 
 		notificationPayload := prepareNotification(payload)
-		err = sendNotification(notificationPayload, request.Header.Get("Authorization"))
+		err = sendNotification(notificationPayload, request.Header.Get("Authorization"), http.DefaultClient)
 		if err != nil {
 			slog.Error("Error sending notification", "err", err)
 			http.Error(response, "Error sending notification", http.StatusInternalServerError)
@@ -149,6 +153,15 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 }
 
 func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
+	// edge case with a non-alert
+	if len(alertPayload.Alerts) == 0 {
+		return NtfyNotification{
+			Message: alertPayload.Message,
+			Title:   alertPayload.Title,
+			Topic:   topic,
+		}
+	}
+
 	firstAlert := alertPayload.Alerts[0]
 	actions := []NtfyAction{
 		{
@@ -176,7 +189,7 @@ func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
 	return payload
 }
 
-func sendNotification(payload NtfyNotification, authHeader string) error {
+func sendNotification(payload NtfyNotification, authHeader string, client HttpClient) error {
 	// Marshal the payload
 	message, err := json.Marshal(payload)
 	if err != nil {
@@ -205,7 +218,7 @@ func sendNotification(payload NtfyNotification, authHeader string) error {
 
 	// Send the request
 	defer req.Body.Close()
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}

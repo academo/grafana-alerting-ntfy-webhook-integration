@@ -24,7 +24,7 @@ func buildBinary() error {
 	env := map[string]string{
 		"CGO_ENABLED": "0",
 		"GO111MODULE": "on",
-		"GOOS":   getOrDefault("GOOS", "linux"),
+		"GOOS":        getOrDefault("GOOS", "linux"),
 	}
 
 	if err := sh.RunWith(env, "go", "build", "-o", filepath.Join(distDir, "grafana-ntfy"), "./pkg"); err != nil {
@@ -45,7 +45,11 @@ func RunLocal() error {
 	env := map[string]string{
 		"DEBUG": "1",
 	}
-	return sh.RunWith(env, filepath.Join(distDir, "grafana-ntfy"), "-ntfy-url", "https://ntfy.sh/mytopic")
+	return sh.RunWith(env, filepath.Join(distDir, "grafana-ntfy"), "-ntfy-url", "https://ntfy.sh/academo")
+}
+
+func Test() error {
+	return sh.RunV("go", "test", "./...")
 }
 
 func Deploy() error {
