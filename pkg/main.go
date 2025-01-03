@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"regexp"
@@ -19,6 +20,8 @@ var (
 	password      = flag.String("password", "", "The ntfy password")
 	allowInsecure = flag.Bool("allow-insecure", false, "Allow insecure connections to ntfy-url")
 	port          = flag.Int("port", 8080, "The port to listen on")
+	listenAddr    = flag.String("addr", ":8080", "The address to listen on")
+	debug         = flag.Bool("debug", false, "print extra debug information")
 )
 
 var urlRe = regexp.MustCompile(`(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?&=]+)$`)
@@ -31,7 +34,8 @@ func main() {
 
 	err = validateFlags()
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("validate flags error", "err", err)
+
 		os.Exit(1)
 	}
 
@@ -39,21 +43,34 @@ func main() {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
+	if *debug {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		})))
+	}
+
 	matches := urlRe.FindStringSubmatch(*ntfyUrl)
 	if len(matches) != 3 {
-		fmt.Println("Error parsing ntfy-url")
+		slog.Error("Error parsing ntfy-url")
+
 		os.Exit(1)
 	}
+
 	serverUrl = matches[1]
 	topic = matches[2]
 
-	fmt.Println("ntfy-url:", *ntfyUrl)
-	fmt.Println("topic:", topic)
-	fmt.Println("serverUrl:", serverUrl)
+	slog.Info(
+		"starting server",
+		"ntfy_url", *ntfyUrl,
+		"topic", topic,
+		"server_url", serverUrl,
+		"listen_addr", *listenAddr,
+	)
 
 	err = server()
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("server startup error", err)
+
 		os.Exit(1)
 	}
 }
@@ -62,24 +79,27 @@ func validateFlags() error {
 	if *ntfyUrl == "" {
 		return fmt.Errorf("ntfy-url is required")
 	}
+
 	if !strings.HasPrefix(*ntfyUrl, "http") {
 		return fmt.Errorf("ntfy-url must start with http or https")
 	}
+
 	if !urlRe.MatchString(*ntfyUrl) {
 		return fmt.Errorf("ntfy-url must follow the format https://ntfy.sh/<topic>. (you may use a custom ntfy server)")
 	}
+
 	return nil
 }
 
-// start a web server on port 8080 and output any json data to the console from a post request
+// start a web server on the configured address
 func server() error {
-	fmt.Println("Forwarding Grafana notifications to ntfy...", *ntfyUrl)
 	http.HandleFunc("/", handleRequest)
-	fmt.Println("Listening on port 8080...")
-	err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
+
+	err := http.ListenAndServe(*listenAddr, nil)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -88,7 +108,9 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 		// Read the request body
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
+			slog.Error("Error reading request body", "err", err)
 			http.Error(response, "Error reading request body", http.StatusBadRequest)
+
 			return
 		}
 
@@ -96,14 +118,18 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 		var payload AlertsPayload
 		err = json.Unmarshal(body, &payload)
 		if err != nil {
+			slog.Error("Error parsing JSON payload", "err", err)
 			http.Error(response, "Error parsing JSON payload", http.StatusBadRequest)
+
 			return
 		}
 
 		notificationPayload := prepareNotification(payload)
-		err = sendNotification(notificationPayload)
+		err = sendNotification(notificationPayload, request.Header.Get("Authorization"))
 		if err != nil {
+			slog.Error("Error sending notification", "err", err)
 			http.Error(response, "Error sending notification", http.StatusInternalServerError)
+
 			return
 		}
 
@@ -112,6 +138,7 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 		fmt.Fprint(response, "Payload received successfully\n")
 	} else {
 		http.Error(response, "Invalid request method", http.StatusMethodNotAllowed)
+
 		return
 	}
 }
@@ -140,18 +167,18 @@ func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
 		Topic:   topic,
 		Actions: actions,
 	}
+
 	return payload
 }
 
-func sendNotification(payload NtfyNotification) error {
+func sendNotification(payload NtfyNotification, authHeader string) error {
 	// Marshal the payload
 	message, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Sending notification to ntfy...")
-	fmt.Println(string(message))
+	slog.Debug("Sending notification to ntfy...", "body", string(message))
 
 	// Create a new request using http
 	req, err := http.NewRequest("POST", serverUrl, bytes.NewBuffer(message))
@@ -167,6 +194,10 @@ func sendNotification(payload NtfyNotification) error {
 		req.SetBasicAuth(*username, *password)
 	}
 
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+
 	// Send the request
 	defer req.Body.Close()
 	resp, err := http.DefaultClient.Do(req)
@@ -179,7 +210,7 @@ func sendNotification(payload NtfyNotification) error {
 		return fmt.Errorf("ntfy returned status code %d", resp.StatusCode)
 	}
 
-	fmt.Println("Notification sent to ntfy")
+	slog.Debug("Notification sent to ntfy")
 
 	return nil
 
