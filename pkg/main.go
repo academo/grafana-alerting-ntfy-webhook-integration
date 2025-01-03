@@ -16,7 +16,10 @@ import (
 
 var (
 	ntfyUrl       = flag.String("ntfy-url", "", "The ntfy url including the topic. e.g.: https://ntfy.sh/mytopic")
+	username      = flag.String("username", "", "The ntfy username")
+	password      = flag.String("password", "", "The ntfy password")
 	allowInsecure = flag.Bool("allow-insecure", false, "Allow insecure connections to ntfy-url")
+	port          = flag.Int("port", 8080, "The port to listen on")
 	listenAddr    = flag.String("addr", ":8080", "The address to listen on")
 	debug         = flag.Bool("debug", false, "print extra debug information")
 )
@@ -185,6 +188,11 @@ func sendNotification(payload NtfyNotification, authHeader string) error {
 
 	// Set the content type to json
 	req.Header.Set("Content-Type", "application/json")
+
+	// Add auth if provided
+	if *username != "" && *password != "" {
+		req.SetBasicAuth(*username, *password)
+	}
 
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)

@@ -106,6 +106,12 @@ Usage of grafana-ntfy:
         print extra debug information
   -ntfy-url string
         The ntfy url including the topic. e.g.: https://ntfy.sh/mytopic
+  -password string
+        The ntfy password
+  -port int
+        The port to listen on (default 8080)
+  -username string
+        The ntfy username
 ```
 
 # No https?
