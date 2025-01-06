@@ -1,4 +1,4 @@
-# Grafana Ntify Webhook integration
+# Grafana Ntfy Webhook integration
 
 Integration between https://ntfy.sh/ and grafana alerting.
 
@@ -71,7 +71,7 @@ services:
 
 ### Example using Docker and a non amd64 architecture
 
-The provided docket image is amd64. Should you wish to use a different architecture, you can [download the binary](https://github.com/academo/grafana-alerting-ntfy-webhook-integration/releases) and use the following docker-compose file as example
+The provided docker image is amd64. Should you wish to use a different architecture, you can [download the binary](https://github.com/academo/grafana-alerting-ntfy-webhook-integration/releases) and use the following docker-compose file as example
 
 ```yaml
 version: "3"
@@ -90,7 +90,7 @@ services:
 
 Then in your grafana alerting webhook contact point you would configure the url as `http://grafana-ntfy:8080` (notice is the hostname value)
 
-For the authorization, use the username and password created in ntfy-sh in Grafana.
+For the authorization, use the username and password passed to ntfy-sh in Grafana.
 
 ## Options
 
