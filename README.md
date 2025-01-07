@@ -35,8 +35,7 @@ services:
   grafana-ntfy:
     image: academo/grafana-ntfy:latest
     hostname: grafana-ntfy
-    command:
-      - "-ntfy-url=https://ntfy.sh/mytopic"
+    command: -ntfy-url=https://ntfy.sh/mytopic
 ```
 
 #### Example of a more complete docker-compose approach
@@ -65,8 +64,7 @@ services:
       - 8080 #only accesible to other containers
     networks:
       - internal
-    command:
-      - "-ntfy-url=https://ntfy.sh/mytopic"
+    command: -ntfy-url=https://ntfy.sh/mytopic
 ```
 
 ### Example using Docker and a non amd64 architecture
