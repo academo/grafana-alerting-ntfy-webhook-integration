@@ -21,5 +21,4 @@ services:
       - 8080 #only accesible to other containers
     networks:
       - internal
-    command:
-      - "-ntfy-url=https://ntfy.sh/mytopic"
+    command: -ntfy-url=https://ntfy.sh/mytopic
