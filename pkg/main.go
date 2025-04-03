@@ -29,12 +29,22 @@ type HttpClient interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-var urlRe = regexp.MustCompile(`url=(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?=]+)`)
+var urlRe = regexp.MustCompile(`(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?&=]+)$`)
+var forwardUrlRe = regexp.MustCompile(`url=(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?=]+)`)
 var priorityRe = regexp.MustCompile(`priority=([0-9]+)`)
+var defaultTopic string
+var defaultServerUrl string
 
 func main() {
 	flag.Parse()
 	var err error
+
+	err = validateFlags()
+	if err != nil {
+		slog.Error("validate flags error", "err", err)
+
+		os.Exit(1)
+	}
 
 	if *allowInsecure {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -53,8 +63,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	serverUrl = matches[1]
-	topic = matches[2]
+	defaultServerUrl = matches[1]
+	defaultTopic = matches[2]
 
 	// fallback for existing port option
 	if *port != 8080 && *listenAddr == ":8080" {
@@ -65,8 +75,8 @@ func main() {
 	slog.Info(
 		"starting server",
 		"ntfy_url", *ntfyUrl,
-		"topic", topic,
-		"server_url", serverUrl,
+		"default_topic", defaultTopic,
+		"default_server_url", defaultServerUrl,
 		"listen_addr", *listenAddr,
 	)
 
@@ -107,16 +117,19 @@ func server() error {
 
 func handleRequest(response http.ResponseWriter, request *http.Request) {
 	if request.Method == "POST" {
-		fmt.Println(request.URL.RequestURI())
-		matchesUrl := urlRe.FindStringSubmatch(request.URL.RequestURI())
-		fmt.Println(matchesUrl)
-		if len(matchesUrl) != 3 {
-			slog.Error("Error parsing ntfy-url")
-			return
-		}
+		var serverUrl string
+		var topic string
 
-		var serverUrl string = matchesUrl[1]
-		var topic string = matchesUrl[2]
+		matchesUrl := forwardUrlRe.FindStringSubmatch(request.URL.RequestURI())
+		if len(matchesUrl) == 3 {
+			slog.Debug("Forwarding request", "url", matchesUrl[1], "topic", matchesUrl[2])
+			serverUrl = matchesUrl[1]
+			topic = matchesUrl[2]
+		} else {
+			slog.Debug("No forward url found in request, using default")
+			serverUrl = defaultServerUrl
+			topic = defaultTopic
+		}
 
 		// Read the request body
 		body, err := io.ReadAll(request.Body)
@@ -221,6 +234,11 @@ func sendNotification(payload NtfyNotification, authHeader string, client HttpCl
 
 	// Set the content type to json
 	req.Header.Set("Content-Type", "application/json")
+
+	// Add auth if provided
+	if *username != "" && *password != "" {
+		req.SetBasicAuth(*username, *password)
+	}
 
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
