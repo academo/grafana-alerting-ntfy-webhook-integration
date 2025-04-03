@@ -53,6 +53,7 @@ func TestPrepareNotification(t *testing.T) {
 					{Action: "view", Label: "Open in Grafana", Url: "http://grafana/alert", Clear: true},
 					{Action: "view", Label: "Silence", Url: "http://grafana/silence", Clear: false},
 				},
+				Priority: 5,
 			},
 		},
 		"empty alerts": {
