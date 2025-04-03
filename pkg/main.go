@@ -123,7 +123,6 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 		if err != nil {
 			slog.Error("Error reading request body", "err", err)
 			http.Error(response, "Error reading request body", http.StatusBadRequest)
-
 			return
 		}
 
@@ -222,11 +221,6 @@ func sendNotification(payload NtfyNotification, authHeader string, client HttpCl
 
 	// Set the content type to json
 	req.Header.Set("Content-Type", "application/json")
-
-	// Add auth if provided
-	if *username != "" && *password != "" {
-		req.SetBasicAuth(*username, *password)
-	}
 
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
