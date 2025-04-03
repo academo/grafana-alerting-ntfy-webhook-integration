@@ -69,8 +69,9 @@ func TestPrepareNotification(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			topic = "test-topic"
-			got := prepareNotification(tc.input)
+			topic := "test-topic"
+			priority := 5
+			got := prepareNotification(tc.input, topic, priority)
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("prepareNotification() = %v, want %v", got, tc.want)
 			}
@@ -162,7 +163,8 @@ func TestSendNotification(t *testing.T) {
 			}
 
 			payload := NtfyNotification{Message: "test"}
-			err := sendNotification(payload, tc.authHeader, mockClient)
+			ntfyUrl := "https://ntfy.sh/test-topic"
+			err := sendNotification(payload, tc.authHeader, mockClient, ntfyUrl)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("sendNotification() error = %v, wantErr %v", err, tc.wantErr)
