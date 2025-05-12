@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -29,8 +30,10 @@ type HttpClient interface {
 }
 
 var urlRe = regexp.MustCompile(`(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?&=]+)$`)
-var topic string
-var serverUrl string
+var forwardUrlRe = regexp.MustCompile(`url=(https?://.*?)/([-a-zA-Z0-9()@:%_\+.~#?=]+)`)
+var priorityRe = regexp.MustCompile(`priority=([0-9]+)`)
+var defaultTopic string
+var defaultServerUrl string
 
 func main() {
 	flag.Parse()
@@ -60,8 +63,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	serverUrl = matches[1]
-	topic = matches[2]
+	defaultServerUrl = matches[1]
+	defaultTopic = matches[2]
 
 	// fallback for existing port option
 	if *port != 8080 && *listenAddr == ":8080" {
@@ -72,8 +75,8 @@ func main() {
 	slog.Info(
 		"starting server",
 		"ntfy_url", *ntfyUrl,
-		"topic", topic,
-		"server_url", serverUrl,
+		"default_topic", defaultTopic,
+		"default_server_url", defaultServerUrl,
 		"listen_addr", *listenAddr,
 	)
 
@@ -114,12 +117,25 @@ func server() error {
 
 func handleRequest(response http.ResponseWriter, request *http.Request) {
 	if request.Method == "POST" {
+		var serverUrl string
+		var topic string
+
+		matchesUrl := forwardUrlRe.FindStringSubmatch(request.URL.RequestURI())
+		if len(matchesUrl) == 3 {
+			slog.Debug("Forwarding request", "url", matchesUrl[1], "topic", matchesUrl[2])
+			serverUrl = matchesUrl[1]
+			topic = matchesUrl[2]
+		} else {
+			slog.Debug("No forward url found in request, using default")
+			serverUrl = defaultServerUrl
+			topic = defaultTopic
+		}
+
 		// Read the request body
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
 			slog.Error("Error reading request body", "err", err)
 			http.Error(response, "Error reading request body", http.StatusBadRequest)
-
 			return
 		}
 
@@ -133,8 +149,19 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		notificationPayload := prepareNotification(payload)
-		err = sendNotification(notificationPayload, request.Header.Get("Authorization"), http.DefaultClient)
+		// Parse priority. Default priority = 3, priority = [1-5]
+		matchesPriority := priorityRe.FindStringSubmatch(request.URL.RequestURI())
+		var priority int = 3
+		var priorityUrl int
+		if len(matchesPriority) == 2 {
+			priorityUrl, err = strconv.Atoi(matchesPriority[1])
+			if priorityUrl > 0 && priorityUrl < 6 {
+				priority = priorityUrl
+			}
+		}
+
+		notificationPayload := prepareNotification(payload, topic, priority)
+		err = sendNotification(notificationPayload, request.Header.Get("Authorization"), http.DefaultClient, serverUrl)
 		if err != nil {
 			slog.Error("Error sending notification", "err", err)
 			http.Error(response, "Error sending notification", http.StatusInternalServerError)
@@ -152,7 +179,7 @@ func handleRequest(response http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
+func prepareNotification(alertPayload AlertsPayload, topic string, priority int) NtfyNotification {
 	// edge case with a non-alert
 	if len(alertPayload.Alerts) == 0 {
 		return NtfyNotification{
@@ -178,18 +205,19 @@ func prepareNotification(alertPayload AlertsPayload) NtfyNotification {
 		},
 	}
 
-	// Prepare the payloa
+	// Prepare the payload
 	payload := NtfyNotification{
-		Message: alertPayload.Message,
-		Title:   alertPayload.Title,
-		Topic:   topic,
-		Actions: actions,
+		Message:  alertPayload.Message,
+		Title:    alertPayload.Title,
+		Topic:    topic,
+		Actions:  actions,
+		Priority: priority,
 	}
 
 	return payload
 }
 
-func sendNotification(payload NtfyNotification, authHeader string, client HttpClient) error {
+func sendNotification(payload NtfyNotification, authHeader string, client HttpClient, serverUrl string) error {
 	// Marshal the payload
 	message, err := json.Marshal(payload)
 	if err != nil {
