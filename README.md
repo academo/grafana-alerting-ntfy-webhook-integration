@@ -105,7 +105,7 @@ Usage of grafana-ntfy:
   -ntfy-url string
         The ntfy url including the topic. e.g.: https://ntfy.sh/mytopic
   -password string
-        The ntfy password
+        The ntfy password. Use simple quote '' if your password have special caracters. e.g.: -password 'MyP4ssw0rd!$'
   -port int
         The port to listen on (default 8080)
   -username string

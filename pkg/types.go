@@ -44,4 +44,5 @@ type NtfyNotification struct {
 	Topic   string       `json:"topic"`
 	Title   string       `json:"title"`
 	Actions []NtfyAction `json:"actions"`
+	Priority int         `json:"priority"`
 }
