@@ -1,10 +1,10 @@
 module github.com/academo/grafana-alerting-ntfy-webhook-integration
 
-go 1.23
+go 1.25
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/magefile/mage v1.15.0
 )
 
